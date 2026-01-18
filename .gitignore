@@ -1,0 +1,59 @@
+# Build outputs
+/build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.so
+
+# Python bytecode and virtual envs
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+ENV/
+*.egg-info/
+dist/
+
+# Data artifacts (generated, not source-controlled)
+/flows/
+flows.csv
+flows_all.csv
+scored_flows.csv
+alerts_*.csv
+iforest_flow_pipeline.joblib
+/captures/*.pcap
+/alerts/*.csv
+/suri_out/
+
+# Logs and misc
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+*.bak
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+
+# Temporary test files
+/tmp/
+/temp/

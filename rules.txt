@@ -1,0 +1,96 @@
+# ==== Suspicious Protocol Activity (only unusual patterns) ====
+# Removed benign protocol detection to reduce false positives on normal traffic
+
+# ==== Exploit Signatures ====
+2001 tcp dst_port=139 hex "ff534d42" msg="SMB1 header (NetBIOS)"
+2002 tcp dst_port=445 hex "ff534d42" msg="SMB1 over direct TCP"
+2003 tcp nocase ascii "/bin/sh" msg="Shell command in payload"
+2004 tcp nocase ascii "/bin/bash" msg="Bash shell in payload"
+2005 tcp nocase ascii "cmd.exe" msg="Windows command shell"
+2006 tcp nocase ascii "powershell" msg="PowerShell execution attempt"
+2007 tcp dst_port=80 nocase ascii "../../../etc/passwd" msg="Directory traversal (passwd file)"
+2008 tcp dst_port=80 nocase ascii "union+select" msg="SQL injection (UNION encoded)"
+2009 tcp dst_port=80 nocase ascii "'+or+'1'='1" msg="SQL injection (encoded OR)"
+2010 tcp nocase ascii "<?php system(" msg="PHP shell injection"
+
+# ==== Remote Code Execution / Backdoors ====
+3001 tcp dst_port=1524 ascii "root@" msg="Ingreslock backdoor signature"
+3002 tcp dst_port=6667 ascii "PRIVMSG" msg="IRC PRIVMSG (possible botnet C&C)"
+3003 tcp dst_port=6667 ascii "JOIN #" msg="IRC JOIN (possible botnet)"
+3004 tcp dst_port=6200 nocase ascii "NICK" msg="IRC on unusual port"
+3005 tcp nocase ascii "exec(\"/bin/" msg="Shell exec attempt"
+3006 tcp nocase ascii "system(\"/bin/" msg="System command execution"
+3007 tcp dst_port=873 ascii "rsync" msg="Rsync service detected"
+3008 tcp dst_port=512 ascii "rsh" msg="Remote shell service"
+3009 tcp dst_port=513 ascii "rlogin" msg="Rlogin service detected"
+
+# ==== Java RMI Exploits ====
+3100 tcp dst_port=1099 hex "4a524d49" msg="Java RMI magic header"
+3101 tcp dst_port=1099 nocase ascii "java.rmi" msg="Java RMI traffic"
+3102 tcp dst_port=1099 nocase ascii "rmiregistry" msg="RMI Registry access"
+
+# ==== Tomcat / Web App Exploits ====
+3200 tcp dst_port=8080 nocase ascii "GET /manager/html" msg="Tomcat manager brute force"
+3201 tcp nocase ascii "WWW-Authenticate: Basic realm=\"Tomcat" msg="Tomcat auth challenge"
+3202 tcp nocase ascii "Apache Tomcat" msg="Tomcat version disclosure"
+3203 tcp dst_port=8080 nocase ascii "Authorization: Basic" msg="Tomcat Basic auth attempt"
+
+# ==== VSFTPD Backdoor (CVE-2011-2523) ====
+3300 tcp dst_port=21 ascii ":)" msg="VSFTPD backdoor trigger"
+3301 tcp dst_port=6200 ascii "id;" msg="VSFTPD backdoor shell command"
+
+# ==== Distcc Exploit ====
+3400 tcp dst_port=3632 ascii "DIST" msg="Distcc protocol header"
+3401 tcp dst_port=3632 nocase ascii "gcc" msg="Distcc compiler invocation"
+3402 tcp dst_port=3632 ascii "(" msg="Distcc potential command injection"
+
+# ==== UnrealIRCd Backdoor ====
+3500 tcp dst_port=6667 ascii "AB;" msg="UnrealIRCd backdoor trigger"
+
+# ==== Malware & C&C Signatures ====
+4001 tcp nocase ascii "/bin/busybox" msg="BusyBox shell (IoT malware)"
+4004 tcp nocase ascii ".onion" msg="Tor hidden service reference"
+4005 tcp nocase ascii "bitcoin" msg="Bitcoin/cryptocurrency reference"
+4006 tcp dst_port=80 nocase ascii "/zbotnet/" msg="Zeus botnet URL"
+4007 tcp dst_port=80 nocase ascii "bot.exe" msg="Bot executable download"
+4008 tcp dst_port=80 nocase ascii "POST /stat.php" msg="BlackEnergy C&C beacon"
+
+# ==== Authentication Attacks ====
+5001 tcp dst_port=22 nocase ascii "password" msg="SSH password in cleartext"
+5002 tcp dst_port=21 ascii "PASS " msg="FTP password command"
+5003 tcp dst_port=23 ascii "Password:" msg="Telnet password prompt"
+5004 tcp dst_port=110 ascii "PASS " msg="POP3 password"
+5005 tcp dst_port=143 ascii "LOGIN " msg="IMAP login attempt"
+5006 tcp nocase ascii "admin:admin" msg="Default credentials (admin:admin)"
+5007 tcp nocase ascii "root:root" msg="Default credentials (root:root)"
+5008 tcp nocase ascii "user:user" msg="Default credentials (user:user)"
+5009 tcp dst_port=25 ascii "EHLO" msg="SMTP EHLO command"
+5010 tcp dst_port=25 ascii "RCPT TO:" msg="SMTP recipient"
+5011 tcp dst_port=25 ascii "DATA" msg="SMTP data transfer"
+
+# ==== Network Reconnaissance ====
+6001 tcp dst_port=80 nocase ascii "nmap" msg="Nmap user agent"
+6002 tcp dst_port=80 nocase ascii "nikto" msg="Nikto scanner"
+6003 tcp dst_port=80 nocase ascii "sqlmap" msg="SQLMap scanner"
+6004 tcp dst_port=80 nocase ascii "metasploit" msg="Metasploit framework"
+6005 tcp dst_port=22 ascii "libssh" msg="Automated SSH tool"
+
+# ==== Data Exfiltration ====
+7002 tcp dst_port=53 nocase ascii "txt=" msg="DNS TXT query (possible exfil)"
+7003 tcp nocase ascii "pastebin" msg="Pastebin reference (exfil/C&C)"
+
+# ==== Port Scan Detection (Threshold Rules) ====
+9001 tcp dst_port=22 event=syn threshold=30 seconds=60 track=src msg="SSH brute force (many connections)"
+9002 tcp dst_port=21 event=syn threshold=30 seconds=60 track=src msg="FTP brute force (many connections)"
+9003 tcp dst_port=23 event=syn threshold=20 seconds=60 track=src msg="Telnet brute force"
+9004 tcp dst_port=3389 event=syn threshold=20 seconds=60 track=src msg="RDP brute force"
+9005 tcp dst_port=3306 event=syn threshold=20 seconds=60 track=src msg="MySQL brute force"
+9006 tcp event=syn threshold=100 seconds=10 track=src msg="Port scan (many SYN from source)"
+9007 tcp event=fin threshold=50 seconds=10 track=src msg="FIN scan detected"
+9008 tcp event=null threshold=30 seconds=10 track=src msg="NULL scan detected"
+9009 tcp event=xmas threshold=30 seconds=10 track=src msg="XMAS scan detected"
+9010 tcp event=rst threshold=100 seconds=5 track=src msg="RST flood from source"
+9011 tcp event=syn threshold=200 seconds=10 track=dst msg="SYN flood to target"
+9012 tcp dst_port=80 event=syn threshold=50 seconds=30 track=src msg="HTTP service brute force"
+9013 tcp dst_port=8080 event=syn threshold=50 seconds=30 track=src msg="HTTP alt port brute force"
+9014 tcp dst_port=25 event=syn threshold=20 seconds=60 track=src msg="SMTP brute force"
