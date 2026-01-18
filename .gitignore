@@ -29,7 +29,7 @@ flows_all.csv
 scored_flows.csv
 alerts_*.csv
 iforest_flow_pipeline.joblib
-/captures/*.pcap
+#/captures/*.pcap
 /alerts/*.csv
 /suri_out/
 
