@@ -74,6 +74,11 @@
 6003 tcp dst_port=80 nocase ascii "sqlmap" msg="SQLMap scanner"
 6004 tcp dst_port=80 nocase ascii "metasploit" msg="Metasploit framework"
 6005 tcp dst_port=22 ascii "libssh" msg="Automated SSH tool"
+6010 tcp dst_port=80 nocase ascii "Nmap Scripting Engine" msg="Nmap NSE HTTP probe"
+6011 tcp nocase ascii "|_" msg="Nmap script output marker in payload"
+6012 tcp nocase ascii "Service Info:" msg="Nmap service/version probe artifact"
+6013 udp dst_port=53 nocase ascii "version.bind" msg="Nmap DNS version probe"
+6014 tcp dst_port=161 nocase ascii "public" msg="SNMP community probe (possible Nmap -sU scan)"
 
 # ==== Data Exfiltration ====
 7002 tcp dst_port=53 nocase ascii "txt=" msg="DNS TXT query (possible exfil)"
@@ -94,3 +99,10 @@
 9012 tcp dst_port=80 event=syn threshold=50 seconds=30 track=src msg="HTTP service brute force"
 9013 tcp dst_port=8080 event=syn threshold=50 seconds=30 track=src msg="HTTP alt port brute force"
 9014 tcp dst_port=25 event=syn threshold=20 seconds=60 track=src msg="SMTP brute force"
+9015 tcp event=syn threshold=60 seconds=8 track=src msg="Fast SYN scan (Nmap -sS style)"
+9016 tcp event=fin threshold=25 seconds=8 track=src msg="FIN stealth scan (Nmap -sF style)"
+9017 tcp event=null threshold=20 seconds=8 track=src msg="NULL stealth scan (Nmap -sN style)"
+9018 tcp event=xmas threshold=20 seconds=8 track=src msg="XMAS stealth scan (Nmap -sX style)"
+9019 tcp event=rst threshold=80 seconds=8 track=src msg="RST-heavy scan/teardown burst"
+9020 tcp event=syn threshold=150 seconds=15 track=dst msg="Distributed SYN scan against target"
+9021 tcp event=syn threshold=15 seconds=5 track=src msg="Possible basic Nmap scan (default/top ports)"
