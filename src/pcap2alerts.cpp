@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <cctype>
@@ -22,10 +23,16 @@
 
 // Global flag for signal handling (graceful shutdown in live mode)
 std::atomic<bool> g_keep_running{true};
+pcap_t* g_live_pcap = nullptr;
 
 void signal_handler(int signum) {
-    std::cerr << "\n[*] Caught signal " << signum << ", shutting down gracefully...\n";
+    (void)signum;
+    const char msg[] = "\n[*] Caught signal, shutting down gracefully...\n";
+    write(STDERR_FILENO, msg, sizeof(msg) - 1);
     g_keep_running = false;
+    if (g_live_pcap != nullptr) {
+        pcap_breakloop(g_live_pcap);
+    }
 }
 
 #pragma pack(push, 1)
@@ -712,6 +719,7 @@ int run_file_mode(const std::string& in_pcap, const std::string& rules_path, con
 // Live mode: capture from network interface
 int run_live_mode(const std::string& interface, const std::string& rules_path, const std::string& out_csv,
                   int snaplen = 65535, bool promisc = true, int timeout_ms = 1000, const std::string& filter = "") {
+    g_keep_running = true;
     
     std::vector<Rule> rules;
     try {
@@ -766,6 +774,7 @@ int run_live_mode(const std::string& interface, const std::string& rules_path, c
     out.flush();
 
     PacketProcessor processor(rules, out);
+    g_live_pcap = p;
 
     // Setup signal handlers for graceful shutdown
     signal(SIGINT, signal_handler);
@@ -823,6 +832,7 @@ int run_live_mode(const std::string& interface, const std::string& rules_path, c
                   << ", Interface dropped: " << ps.ps_ifdrop << "\n";
     }
 
+    g_live_pcap = nullptr;
     pcap_close(p);
     std::cerr << "[*] Captured " << captured_packets
               << ", Seen " << processor.get_packet_count()
