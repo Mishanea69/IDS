@@ -358,6 +358,8 @@ static std::optional<Rule> parse_rule_line(const std::string& line_raw) {
         }
     }
 
+    if (!saw_type || r.pat_bytes.empty()) return std::nullopt;
+
     if (r.is_threshold) {
         if (r.event.empty() || r.threshold_n <= 0 || r.threshold_s <= 0.0) return std::nullopt;
         if (!(r.track == "src" || r.track == "dst" || r.track == "both")) return std::nullopt;
@@ -428,7 +430,7 @@ public:
     }
 
     void process_packet(const pcap_pkthdr* hdr, const u_char* data, int dlt) {
-        pkt_count_++;
+        pkt_seen_++;
         
         if (hdr->caplen < sizeof(EthHdr)) return;
         double ts = ts_to_seconds(hdr->ts);
@@ -503,6 +505,8 @@ public:
             return;
         }
 
+        pkt_processed_++;
+
         // Compute payload bounds carefully (caplen-limited)
         size_t l4_payload_off = l4_off + l4_hdr_len;
         if (hdr->caplen < l4_payload_off) return;
@@ -515,8 +519,6 @@ public:
 
         size_t payload_len = std::min(cap_payload_len, static_cast<size_t>(computed));
         const uint8_t* payload = reinterpret_cast<const uint8_t*>(data + l4_payload_off);
-
-        if (payload_len == 0) return;
 
         // Apply rules
         for (const auto& r : rules_) {
@@ -587,12 +589,13 @@ public:
                     << 0 << ","
                     << 0
                     << "\n";
-                out_.flush(); // Flush immediately for real-time mode
                 alert_count_++;
             }
 
             continue;
             }
+
+            if (payload_len == 0) continue;
 
             size_t off_match = std::string::npos;
             if (r.ptype == PatternType::ASCII && r.nocase) {
@@ -621,12 +624,12 @@ public:
                 << off_match << ","
                 << payload_len
                 << "\n";
-            out_.flush(); // Flush immediately for real-time mode
             alert_count_++;
         }
     }
 
-    uint64_t get_packet_count() const { return pkt_count_; }
+    uint64_t get_packet_count() const { return pkt_seen_; }
+    uint64_t get_processed_count() const { return pkt_processed_; }
     uint64_t get_alert_count() const { return alert_count_; }
 
 private:
@@ -635,7 +638,8 @@ private:
     double alert_window_s_;
     
     uint64_t alert_count_ = 0;
-    uint64_t pkt_count_ = 0;
+    uint64_t pkt_seen_ = 0;
+    uint64_t pkt_processed_ = 0;
 
     std::unordered_map<AlertKey, double, AlertKeyHash> alert_last_ts_;
     std::unordered_map<ThKey, std::deque<double>, ThKeyHash> th_hist_;
@@ -680,6 +684,7 @@ int run_file_mode(const std::string& in_pcap, const std::string& rules_path, con
 
     const u_char* data = nullptr;
     pcap_pkthdr* hdr = nullptr;
+    uint64_t captured_packets = 0;
 
     std::cerr << "[*] Processing PCAP file: " << in_pcap << "\n";
 
@@ -692,11 +697,14 @@ int run_file_mode(const std::string& in_pcap, const std::string& rules_path, con
         }
         if (rc == -2) break; // EOF
 
+        captured_packets++;
         processor.process_packet(hdr, data, dlt);
     }
 
     pcap_close(p);
-    std::cerr << "[*] Processed " << processor.get_packet_count() << " packets. ";
+    std::cerr << "[*] Captured " << captured_packets
+              << ", Seen " << processor.get_packet_count()
+              << ", Processed " << processor.get_processed_count() << " packets. ";
     std::cerr << "Wrote " << processor.get_alert_count() << " alerts to " << out_csv << "\n";
     return 0;
 }
@@ -769,20 +777,23 @@ int run_live_mode(const std::string& interface, const std::string& rules_path, c
 
     const u_char* data = nullptr;
     pcap_pkthdr* hdr = nullptr;
+    uint64_t captured_packets = 0;
 
     auto last_stats_time = std::chrono::steady_clock::now();
-    const int stats_interval_sec = 10;
+    const int stats_interval_sec = 5;
 
     while (g_keep_running) {
         int rc = pcap_next_ex(p, &hdr, &data);
-        if (rc == 0) continue; // timeout
         if (rc == -1) {
             std::cerr << "[ERROR] pcap_next_ex error: " << pcap_geterr(p) << "\n";
             break;
         }
         if (rc == -2) break; // should not happen in live mode
 
-        processor.process_packet(hdr, data, dlt);
+        if (rc == 1) {
+            captured_packets++;
+            processor.process_packet(hdr, data, dlt);
+        }
 
         // Print periodic statistics
         auto now = std::chrono::steady_clock::now();
@@ -790,11 +801,14 @@ int run_live_mode(const std::string& interface, const std::string& rules_path, c
         if (elapsed >= stats_interval_sec) {
             struct pcap_stat ps;
             if (pcap_stats(p, &ps) == 0) {
-                std::cerr << "[*] Stats: Packets=" << processor.get_packet_count()
+                std::cerr << "[*] Stats: Captured=" << ps.ps_recv
+                          << ", Seen=" << processor.get_packet_count()
+                          << ", Processed=" << processor.get_processed_count()
                           << ", Alerts=" << processor.get_alert_count()
                           << ", Dropped=" << ps.ps_drop
                           << ", IfDropped=" << ps.ps_ifdrop << "\n";
             }
+            out.flush();
             last_stats_time = now;
         }
     }
@@ -810,7 +824,9 @@ int run_live_mode(const std::string& interface, const std::string& rules_path, c
     }
 
     pcap_close(p);
-    std::cerr << "[*] Processed " << processor.get_packet_count() << " packets. ";
+    std::cerr << "[*] Captured " << captured_packets
+              << ", Seen " << processor.get_packet_count()
+              << ", Processed " << processor.get_processed_count() << " packets. ";
     std::cerr << "Wrote " << processor.get_alert_count() << " alerts to " << out_csv << "\n";
     return 0;
 }
