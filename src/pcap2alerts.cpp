@@ -366,8 +366,6 @@ static std::optional<Rule> parse_rule_line(const std::string& line_raw) {
         }
     }
 
-    if (!saw_type || r.pat_bytes.empty()) return std::nullopt;
-
     if (r.is_threshold) {
         if (r.event.empty() || r.threshold_n <= 0 || r.threshold_s <= 0.0) return std::nullopt;
         if (!(r.track == "src" || r.track == "dst" || r.track == "both")) return std::nullopt;

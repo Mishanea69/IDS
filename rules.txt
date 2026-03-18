@@ -16,10 +16,10 @@
 # ==== Remote Code Execution / Backdoors ====
 3001 tcp dst_port=1524 ascii "root@" msg="Ingreslock backdoor signature"
 3002 tcp dst_port=6667 ascii "PRIVMSG" msg="IRC PRIVMSG (possible botnet C&C)"
-3003 tcp dst_port=6667 ascii "JOIN #" msg="IRC JOIN (possible botnet)"
+3003 tcp dst_port=6667 ascii "JOIN" msg="IRC JOIN (possible botnet)"
 3004 tcp dst_port=6200 nocase ascii "NICK" msg="IRC on unusual port"
-3005 tcp nocase ascii "exec(\"/bin/" msg="Shell exec attempt"
-3006 tcp nocase ascii "system(\"/bin/" msg="System command execution"
+3005 tcp nocase ascii "exec(" msg="Shell exec attempt"
+3006 tcp nocase ascii "system(" msg="System command execution"
 3007 tcp dst_port=873 ascii "rsync" msg="Rsync service detected"
 3008 tcp dst_port=512 ascii "rsh" msg="Remote shell service"
 3009 tcp dst_port=513 ascii "rlogin" msg="Rlogin service detected"
@@ -31,7 +31,7 @@
 
 # ==== Tomcat / Web App Exploits ====
 3200 tcp dst_port=8080 nocase ascii "GET /manager/html" msg="Tomcat manager brute force"
-3201 tcp nocase ascii "WWW-Authenticate: Basic realm=\"Tomcat" msg="Tomcat auth challenge"
+3201 tcp nocase ascii "WWW-Authenticate: Basic realm=" msg="Tomcat auth challenge"
 3202 tcp nocase ascii "Apache Tomcat" msg="Tomcat version disclosure"
 3203 tcp dst_port=8080 nocase ascii "Authorization: Basic" msg="Tomcat Basic auth attempt"
 
