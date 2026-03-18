@@ -28,7 +28,8 @@ pcap_t* g_live_pcap = nullptr;
 void signal_handler(int signum) {
     (void)signum;
     const char msg[] = "\n[*] Caught signal, shutting down gracefully...\n";
-    write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    ssize_t ignored = write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    (void)ignored;
     g_keep_running = false;
     if (g_live_pcap != nullptr) {
         pcap_breakloop(g_live_pcap);
