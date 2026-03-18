@@ -4,20 +4,20 @@ A lightweight, dual-mode intrusion detection system combining **signature-based 
 
 ## Features
 
-### 🎯 Signature-Based Detection (`pcap2alerts`)
+###  Signature-Based Detection (`pcap2alerts`)
 - **Pattern matching**: ASCII (case-sensitive/insensitive) and HEX byte patterns
 - **Threshold-based rules**: Detects port scans, brute force attempts, and DDoS via TCP flag rate analysis
 - **Fast processing**: Zero-copy packet parsing, ~1M+ packets/sec
 - **Multi-protocol**: TCP, UDP with support for Ethernet and Linux cooked capture formats
 - **Flexible rules**: SID-based system for easy rule management and severity classification
 
-### 🤖 Anomaly Detection (`train_iforest_flow` / `score_iforest_flow`)
+###  Anomaly Detection (`train_iforest_flow` / `score_iforest_flow`)
 - **Isolation Forest** model trained on normal network flows
 - **Flow-based features**: packet counts, bytes, duration, inter-arrival times, TCP flags
 - **Unsupervised learning**: No attack labels needed for training
 - **Low resource**: Minimal dependencies, suitable for RPi
 
-### 📊 Analysis & Reporting (`analyze_alerts.py`)
+###  Analysis & Reporting (`analyze_alerts.py`)
 - Comprehensive alert dashboards with severity breakdowns
 - Per-capture detection statistics
 - False positive vs. attack detection rates
@@ -206,12 +206,12 @@ Missed (0-day / distributed DDoS without payload):
 
 ## Performance Characteristics
 
-### Resource Usage (Raspberry Pi 4)
+### Resource Usage (Raspberry Pi 5)
 
 | Metric | Value |
 |--------|-------|
 | Memory (pcap2alerts) | ~50-100 MB |
-| CPU Load (single core) | 15-25% |
+| CPU Load (single core) | 10-15% |
 | Processing Speed | ~500K-1M packets/sec |
 | Rules Loaded | 51 rules |
 | Avg Rule Evaluation Time | <1µs per rule |

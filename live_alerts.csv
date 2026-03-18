@@ -1,0 +1,1 @@
+ts,rule_sid,rule_msg,proto,src_ip,src_port,dst_ip,dst_port,match_type,match_value,match_offset,payload_len
