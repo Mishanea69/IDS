@@ -1,0 +1,216 @@
+# =============================================================================
+# Suricata-Compatible IDS Rules
+# Format: alert <proto> <src_ip> <src_port> -> <dst_ip> <dst_port> (options)
+# =============================================================================
+
+# =============================================================================
+# EXPLOIT SIGNATURES — SMB / Shell injection
+# =============================================================================
+alert tcp any any -> any 139 (msg:"ET EXPLOIT SMB1 header over NetBIOS"; content:"|ff 53 4d 42|"; depth:4; sid:2001; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any 445 (msg:"ET EXPLOIT SMB1 over direct TCP"; content:"|ff 53 4d 42|"; depth:4; sid:2002; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any any (msg:"ET EXPLOIT Shell command in payload /bin/sh"; content:"/bin/sh"; nocase; sid:2003; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any any (msg:"ET EXPLOIT Bash shell in payload"; content:"/bin/bash"; nocase; sid:2004; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any any (msg:"ET EXPLOIT Windows command shell cmd.exe"; content:"cmd.exe"; nocase; sid:2005; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any any (msg:"ET EXPLOIT PowerShell execution attempt"; content:"powershell"; nocase; sid:2006; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any 80 (msg:"ET EXPLOIT Directory traversal passwd file"; content:"../../../etc/passwd"; nocase; sid:2007; rev:2; classtype:web-application-attack;)
+alert tcp any any -> any 80 (msg:"ET EXPLOIT SQL injection UNION encoded"; content:"union+select"; nocase; sid:2008; rev:2; classtype:web-application-attack;)
+alert tcp any any -> any 80 (msg:"ET EXPLOIT SQL injection OR encoded"; content:"'+or+'1'='1"; nocase; sid:2009; rev:2; classtype:web-application-attack;)
+alert tcp any any -> any any (msg:"ET EXPLOIT PHP shell injection system("; content:"<?php system("; nocase; sid:2010; rev:2; classtype:web-application-attack;)
+
+# =============================================================================
+# EXPLOIT SIGNATURES — Additional web attacks
+# =============================================================================
+alert tcp any any -> any [80,443,8080,8443] (msg:"ET WEB_ATTACK XSS attempt script tag"; content:"<script>"; nocase; sid:2011; rev:1; classtype:web-application-attack;)
+alert tcp any any -> any [80,443,8080,8443] (msg:"ET WEB_ATTACK XSS onerror attribute"; content:"onerror="; nocase; sid:2012; rev:1; classtype:web-application-attack;)
+alert tcp any any -> any [80,443,8080,8443] (msg:"ET WEB_ATTACK XXE injection DOCTYPE"; content:"<!DOCTYPE"; nocase; content:"SYSTEM"; nocase; distance:0; sid:2013; rev:1; classtype:web-application-attack;)
+alert tcp any any -> any [80,443,8080,8443] (msg:"ET WEB_ATTACK SSRF attempt file://"; content:"file://"; nocase; sid:2014; rev:1; classtype:web-application-attack;)
+alert tcp any any -> any [80,443,8080,8443] (msg:"ET WEB_ATTACK Log4Shell JNDI exploit"; content:"${jndi:"; nocase; sid:2015; rev:1; classtype:attempted-exploit;)
+alert tcp any any -> any [80,443,8080,8443] (msg:"ET WEB_ATTACK Path traversal encoded %2e%2e"; content:"%2e%2e%2f"; nocase; sid:2016; rev:1; classtype:web-application-attack;)
+alert tcp any any -> any [80,443] (msg:"ET WEB_ATTACK SQL injection sleep()"; content:"sleep("; nocase; content:"select"; nocase; distance:0; sid:2017; rev:1; classtype:web-application-attack;)
+alert tcp any any -> any [80,443] (msg:"ET WEB_ATTACK SQL injection benchmark()"; content:"benchmark("; nocase; sid:2018; rev:1; classtype:web-application-attack;)
+
+# =============================================================================
+# REMOTE CODE EXECUTION / BACKDOORS
+# =============================================================================
+alert tcp any any -> any 1524 (msg:"ET BACKDOOR Ingreslock backdoor root@"; content:"root@"; sid:3001; rev:2; classtype:backdoor;)
+alert tcp any any -> any 6667 (msg:"ET MALWARE IRC PRIVMSG possible botnet C&C"; content:"PRIVMSG"; sid:3002; rev:2; classtype:trojan-activity;)
+alert tcp any any -> any 6667 (msg:"ET MALWARE IRC JOIN possible botnet"; content:"JOIN"; sid:3003; rev:2; classtype:trojan-activity;)
+alert tcp any any -> any 6200 (msg:"ET MALWARE IRC NICK on unusual port"; content:"NICK"; nocase; sid:3004; rev:2; classtype:trojan-activity;)
+alert tcp any any -> any any (msg:"ET EXPLOIT Shell exec() attempt"; content:"exec("; nocase; sid:3005; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any any (msg:"ET EXPLOIT system() command execution"; content:"system("; nocase; sid:3006; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any 873 (msg:"ET POLICY Rsync service detected"; content:"rsync"; sid:3007; rev:2; classtype:policy-violation;)
+alert tcp any any -> any 512 (msg:"ET POLICY Remote shell rsh service"; content:"rsh"; sid:3008; rev:2; classtype:policy-violation;)
+alert tcp any any -> any 513 (msg:"ET POLICY Rlogin service detected"; content:"rlogin"; sid:3009; rev:2; classtype:policy-violation;)
+
+# Reverse shell patterns
+alert tcp any any -> any any (msg:"ET EXPLOIT Python reverse shell one-liner"; content:"python"; nocase; content:"socket"; nocase; distance:0; content:"connect"; nocase; distance:0; sid:3010; rev:1; classtype:attempted-exploit;)
+alert tcp any any -> any any (msg:"ET EXPLOIT Netcat reverse shell -e flag"; content:"nc "; content:"-e"; distance:0; within:20; sid:3011; rev:1; classtype:attempted-exploit;)
+alert tcp any any -> any any (msg:"ET EXPLOIT Bash /dev/tcp reverse shell"; content:"/dev/tcp/"; sid:3012; rev:1; classtype:attempted-exploit;)
+
+# =============================================================================
+# JAVA RMI EXPLOITS
+# =============================================================================
+alert tcp any any -> any 1099 (msg:"ET EXPLOIT Java RMI magic header"; content:"|4a 52 4d 49|"; depth:4; sid:3100; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any 1099 (msg:"ET EXPLOIT Java RMI traffic"; content:"java.rmi"; nocase; sid:3101; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any 1099 (msg:"ET EXPLOIT RMI Registry access"; content:"rmiregistry"; nocase; sid:3102; rev:2; classtype:attempted-exploit;)
+
+# =============================================================================
+# TOMCAT / WEB APP EXPLOITS
+# =============================================================================
+alert tcp any any -> any 8080 (msg:"ET EXPLOIT Tomcat manager brute force"; content:"GET /manager/html"; nocase; sid:3200; rev:2; classtype:web-application-attack;)
+alert tcp any any -> any any (msg:"ET EXPLOIT Tomcat auth challenge"; content:"WWW-Authenticate: Basic realm="; nocase; sid:3201; rev:2; classtype:web-application-attack;)
+alert tcp any any -> any any (msg:"ET POLICY Apache Tomcat version disclosure"; content:"Apache Tomcat"; nocase; sid:3202; rev:2; classtype:policy-violation;)
+alert tcp any any -> any 8080 (msg:"ET EXPLOIT Tomcat Basic auth attempt"; content:"Authorization: Basic"; nocase; sid:3203; rev:2; classtype:web-application-attack;)
+
+# =============================================================================
+# VSFTPD BACKDOOR (CVE-2011-2523)
+# =============================================================================
+alert tcp any any -> any 21 (msg:"ET EXPLOIT VSFTPD backdoor trigger smiley"; content:":)"; sid:3300; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any 6200 (msg:"ET EXPLOIT VSFTPD backdoor shell command"; content:"id;"; sid:3301; rev:2; classtype:attempted-exploit;)
+
+# =============================================================================
+# DISTCC EXPLOIT
+# =============================================================================
+alert tcp any any -> any 3632 (msg:"ET EXPLOIT Distcc protocol header"; content:"DIST"; depth:4; sid:3400; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any 3632 (msg:"ET EXPLOIT Distcc compiler invocation"; content:"gcc"; nocase; sid:3401; rev:2; classtype:attempted-exploit;)
+alert tcp any any -> any 3632 (msg:"ET EXPLOIT Distcc potential command injection"; content:"("; sid:3402; rev:2; classtype:attempted-exploit;)
+
+# =============================================================================
+# UnrealIRCd BACKDOOR
+# =============================================================================
+alert tcp any any -> any 6667 (msg:"ET EXPLOIT UnrealIRCd backdoor trigger AB;"; content:"AB;"; sid:3500; rev:2; classtype:attempted-exploit;)
+
+# =============================================================================
+# SHELLSHOCK (CVE-2014-6271)
+# =============================================================================
+alert tcp any any -> any [80,443,8080,8443] (msg:"ET EXPLOIT Shellshock HTTP header injection"; content:"() {"; pcre:"/\(\) \{[^}]*\}\s*;/"; sid:3600; rev:1; classtype:attempted-exploit;)
+
+# =============================================================================
+# HEARTBLEED (CVE-2014-0160)
+# =============================================================================
+alert tcp any any -> any 443 (msg:"ET EXPLOIT Heartbleed TLS heartbeat request"; content:"|18 03|"; depth:2; dsize:<4; sid:3700; rev:1; classtype:attempted-exploit;)
+
+# =============================================================================
+# MALWARE & C&C SIGNATURES
+# =============================================================================
+alert tcp any any -> any any (msg:"ET MALWARE BusyBox shell IoT malware"; content:"/bin/busybox"; nocase; sid:4001; rev:2; classtype:trojan-activity;)
+alert tcp any any -> any any (msg:"ET POLICY Tor hidden service reference .onion"; content:".onion"; nocase; sid:4004; rev:2; classtype:policy-violation;)
+alert tcp any any -> any any (msg:"ET POLICY Bitcoin cryptocurrency reference"; content:"bitcoin"; nocase; sid:4005; rev:2; classtype:policy-violation;)
+alert tcp any any -> any 80 (msg:"ET MALWARE Zeus botnet URL /zbotnet/"; content:"/zbotnet/"; nocase; sid:4006; rev:2; classtype:trojan-activity;)
+alert tcp any any -> any 80 (msg:"ET MALWARE Bot executable download bot.exe"; content:"bot.exe"; nocase; sid:4007; rev:2; classtype:trojan-activity;)
+alert tcp any any -> any 80 (msg:"ET MALWARE BlackEnergy C&C beacon POST /stat.php"; content:"POST /stat.php"; nocase; sid:4008; rev:2; classtype:trojan-activity;)
+
+# Ransomware indicators
+alert tcp any any -> any [80,443] (msg:"ET MALWARE Ransomware ransom note keyword"; content:"your files have been encrypted"; nocase; sid:4010; rev:1; classtype:trojan-activity;)
+alert tcp any any -> any [80,443] (msg:"ET MALWARE Possible ransomware bitcoin payment demand"; content:"bitcoin"; nocase; content:"decrypt"; nocase; distance:0; sid:4011; rev:1; classtype:trojan-activity;)
+
+# Cobalt Strike / Metasploit beacons
+alert tcp any any -> any [80,443] (msg:"ET MALWARE Cobalt Strike malleable C2 junk pattern"; content:"|00 00|"; depth:2; dsize:>64; rawbytes; pcre:"/^[\x00]{2}[\x00-\xff]{62}/"; sid:4012; rev:1; classtype:trojan-activity;)
+alert http any any -> any any (msg:"ET MALWARE Meterpreter reverse HTTPS beacon"; content:"GET /"; http_method; content:"Mozilla/4.0 (compatible; MSIE 6.0"; http_header; sid:4013; rev:1; classtype:trojan-activity;)
+
+# =============================================================================
+# AUTHENTICATION ATTACKS
+# =============================================================================
+alert tcp any any -> any 22 (msg:"ET ATTACK SSH cleartext password in payload"; content:"password"; nocase; sid:5001; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any 21 (msg:"ET ATTACK FTP PASS command"; content:"PASS "; sid:5002; rev:2; classtype:credential-theft;)
+alert tcp any any -> any 23 (msg:"ET ATTACK Telnet password prompt"; content:"Password:"; sid:5003; rev:2; classtype:credential-theft;)
+alert tcp any any -> any 110 (msg:"ET ATTACK POP3 PASS command"; content:"PASS "; sid:5004; rev:2; classtype:credential-theft;)
+alert tcp any any -> any 143 (msg:"ET ATTACK IMAP LOGIN attempt"; content:"LOGIN "; sid:5005; rev:2; classtype:credential-theft;)
+alert tcp any any -> any any (msg:"ET ATTACK Default credentials admin:admin"; content:"admin:admin"; nocase; sid:5006; rev:2; classtype:policy-violation;)
+alert tcp any any -> any any (msg:"ET ATTACK Default credentials root:root"; content:"root:root"; nocase; sid:5007; rev:2; classtype:policy-violation;)
+alert tcp any any -> any any (msg:"ET ATTACK Default credentials user:user"; content:"user:user"; nocase; sid:5008; rev:2; classtype:policy-violation;)
+alert tcp any any -> any 25 (msg:"ET SMTP EHLO command"; content:"EHLO"; sid:5009; rev:2; classtype:policy-violation;)
+alert tcp any any -> any 25 (msg:"ET SMTP RCPT TO recipient"; content:"RCPT TO:"; sid:5010; rev:2; classtype:policy-violation;)
+alert tcp any any -> any 25 (msg:"ET SMTP DATA transfer"; content:"DATA"; sid:5011; rev:2; classtype:policy-violation;)
+
+# Credential stuffing / spraying indicators
+alert tcp any any -> any [80,443] (msg:"ET ATTACK HTTP Basic auth many attempts"; content:"Authorization: Basic"; nocase; sid:5012; rev:1; classtype:attempted-admin;)
+alert tcp any any -> any 3389 (msg:"ET ATTACK RDP cleartext auth attempt"; content:"NTLMSSP"; sid:5013; rev:1; classtype:attempted-admin;)
+
+# =============================================================================
+# NETWORK RECONNAISSANCE
+# =============================================================================
+alert tcp any any -> any 80 (msg:"ET SCAN Nmap HTTP user-agent"; content:"nmap"; nocase; sid:6001; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any 80 (msg:"ET SCAN Nikto web scanner"; content:"nikto"; nocase; sid:6002; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any 80 (msg:"ET SCAN SQLMap scanner"; content:"sqlmap"; nocase; sid:6003; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any 80 (msg:"ET SCAN Metasploit framework detected"; content:"metasploit"; nocase; sid:6004; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any 22 (msg:"ET SCAN Automated SSH tool libssh"; content:"libssh"; sid:6005; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any 80 (msg:"ET SCAN Nmap NSE HTTP probe"; content:"Nmap Scripting Engine"; nocase; sid:6010; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN Nmap script output marker in payload"; content:"|_"; sid:6011; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN Nmap service/version probe artifact"; content:"Service Info:"; nocase; sid:6012; rev:2; classtype:attempted-recon;)
+alert udp any any -> any 53 (msg:"ET SCAN Nmap DNS version probe"; content:"version.bind"; nocase; sid:6013; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any 161 (msg:"ET SCAN SNMP community probe possible Nmap -sU"; content:"public"; nocase; sid:6014; rev:2; classtype:attempted-recon;)
+
+# Additional scanners
+alert http any any -> any any (msg:"ET SCAN Masscan HTTP banner"; content:"masscan"; nocase; http_header; sid:6015; rev:1; classtype:attempted-recon;)
+alert http any any -> any any (msg:"ET SCAN ZGrab scanner HTTP request"; content:"zgrab"; nocase; http_header; sid:6016; rev:1; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN Hydra brute force tool"; content:"Hydra"; sid:6017; rev:1; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN OpenVAS vulnerability scanner"; content:"OpenVAS"; nocase; sid:6018; rev:1; classtype:attempted-recon;)
+alert http any any -> any any (msg:"ET SCAN Gobuster directory brute force"; content:"Go-http-client"; http_user_agent; sid:6019; rev:1; classtype:attempted-recon;)
+alert http any any -> any any (msg:"ET SCAN Dirbuster directory scanner"; content:"DirBuster"; http_user_agent; sid:6020; rev:1; classtype:attempted-recon;)
+alert http any any -> any any (msg:"ET SCAN WPScan WordPress scanner"; content:"WPScan"; http_user_agent; sid:6021; rev:1; classtype:attempted-recon;)
+
+# =============================================================================
+# DATA EXFILTRATION
+# =============================================================================
+alert tcp any any -> any 53 (msg:"ET EXPLOIT DNS TXT query possible exfil"; content:"txt="; nocase; sid:7002; rev:2; classtype:policy-violation;)
+alert tcp any any -> any any (msg:"ET POLICY Pastebin reference possible exfil/C&C"; content:"pastebin"; nocase; sid:7003; rev:2; classtype:policy-violation;)
+
+# DNS tunneling / exfil patterns
+alert udp any any -> any 53 (msg:"ET EXPLOIT DNS tunneling long subdomain query"; content:"|01 00 00 01|"; depth:4; offset:2; dsize:>100; sid:7004; rev:1; classtype:policy-violation;)
+alert tcp any any -> any [80,443] (msg:"ET POLICY Large POST to external unusual port"; content:"POST "; http_method; dsize:>5000; sid:7005; rev:1; classtype:policy-violation;)
+
+# =============================================================================
+# PORT SCAN DETECTION (Threshold / rate-based rules)
+# Note: Suricata uses the 'detection_filter' or 'threshold' keyword for rate limiting.
+# These rules use threshold for compatibility; tune count and seconds to your environment.
+# =============================================================================
+alert tcp any any -> any 22 (msg:"ET SCAN SSH brute force many connections"; flags:S,12; threshold: type threshold, track by_src, count 30, seconds 60; sid:9001; rev:2; classtype:attempted-admin;)
+alert tcp any any -> any 21 (msg:"ET SCAN FTP brute force many connections"; flags:S,12; threshold: type threshold, track by_src, count 30, seconds 60; sid:9002; rev:2; classtype:attempted-admin;)
+alert tcp any any -> any 23 (msg:"ET SCAN Telnet brute force"; flags:S,12; threshold: type threshold, track by_src, count 20, seconds 60; sid:9003; rev:2; classtype:attempted-admin;)
+alert tcp any any -> any 3389 (msg:"ET SCAN RDP brute force"; flags:S,12; threshold: type threshold, track by_src, count 20, seconds 60; sid:9004; rev:2; classtype:attempted-admin;)
+alert tcp any any -> any 3306 (msg:"ET SCAN MySQL brute force"; flags:S,12; threshold: type threshold, track by_src, count 20, seconds 60; sid:9005; rev:2; classtype:attempted-admin;)
+alert tcp any any -> any any (msg:"ET SCAN Port scan many SYN from source"; flags:S,12; threshold: type threshold, track by_src, count 100, seconds 10; sid:9006; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN FIN scan detected"; flags:F,12; threshold: type threshold, track by_src, count 50, seconds 10; sid:9007; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN NULL scan detected"; flags:0; threshold: type threshold, track by_src, count 30, seconds 10; sid:9008; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN XMAS scan detected"; flags:FPU,12; threshold: type threshold, track by_src, count 30, seconds 10; sid:9009; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN RST flood from source"; flags:R,12; threshold: type threshold, track by_src, count 100, seconds 5; sid:9010; rev:2; classtype:attempted-dos;)
+alert tcp any any -> any any (msg:"ET SCAN SYN flood to target"; flags:S,12; threshold: type threshold, track by_dst, count 200, seconds 10; sid:9011; rev:2; classtype:attempted-dos;)
+alert tcp any any -> any 80 (msg:"ET SCAN HTTP service brute force"; flags:S,12; threshold: type threshold, track by_src, count 50, seconds 30; sid:9012; rev:2; classtype:attempted-admin;)
+alert tcp any any -> any 8080 (msg:"ET SCAN HTTP alt port brute force"; flags:S,12; threshold: type threshold, track by_src, count 50, seconds 30; sid:9013; rev:2; classtype:attempted-admin;)
+alert tcp any any -> any 25 (msg:"ET SCAN SMTP brute force"; flags:S,12; threshold: type threshold, track by_src, count 20, seconds 60; sid:9014; rev:2; classtype:attempted-admin;)
+alert tcp any any -> any any (msg:"ET SCAN Fast SYN scan Nmap -sS style"; flags:S,12; threshold: type threshold, track by_src, count 60, seconds 8; sid:9015; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN FIN stealth scan Nmap -sF style"; flags:F,12; threshold: type threshold, track by_src, count 25, seconds 8; sid:9016; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN NULL stealth scan Nmap -sN style"; flags:0; threshold: type threshold, track by_src, count 20, seconds 8; sid:9017; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN XMAS stealth scan Nmap -sX style"; flags:FPU,12; threshold: type threshold, track by_src, count 20, seconds 8; sid:9018; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN RST-heavy scan teardown burst"; flags:R,12; threshold: type threshold, track by_src, count 80, seconds 8; sid:9019; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN Distributed SYN scan against target"; flags:S,12; threshold: type threshold, track by_dst, count 150, seconds 15; sid:9020; rev:2; classtype:attempted-recon;)
+alert tcp any any -> any any (msg:"ET SCAN Possible basic Nmap scan default/top ports"; flags:S,12; threshold: type threshold, track by_src, count 15, seconds 5; sid:9021; rev:2; classtype:attempted-recon;)
+
+# UDP-based scan detection
+alert udp any any -> any any (msg:"ET SCAN UDP port scan from source"; threshold: type threshold, track by_src, count 50, seconds 10; sid:9022; rev:1; classtype:attempted-recon;)
+
+# =============================================================================
+# LATERAL MOVEMENT
+# =============================================================================
+alert tcp any any -> any 445 (msg:"ET LATERAL SMB connection to multiple hosts"; content:"|ff 53 4d 42|"; threshold: type threshold, track by_src, count 10, seconds 60; sid:9100; rev:1; classtype:attempted-admin;)
+alert tcp any any -> any 22 (msg:"ET LATERAL SSH lateral movement multiple targets"; flags:S,12; threshold: type threshold, track by_src, count 5, seconds 60; sid:9101; rev:1; classtype:attempted-admin;)
+alert tcp any any -> any 135 (msg:"ET LATERAL WMI/DCOM RPC connection"; content:"|05 00|"; depth:2; sid:9102; rev:1; classtype:attempted-admin;)
+alert tcp any any -> any 5985 (msg:"ET LATERAL WinRM PowerShell remoting"; content:"WSMan"; nocase; sid:9103; rev:1; classtype:attempted-admin;)
+alert tcp any any -> any 5986 (msg:"ET LATERAL WinRM HTTPS PowerShell remoting"; content:"WSMan"; nocase; sid:9104; rev:1; classtype:attempted-admin;)
+
+# =============================================================================
+# PRIVILEGE ESCALATION INDICATORS
+# =============================================================================
+alert tcp any any -> any any (msg:"ET EXPLOIT SUID binary abuse /usr/bin/sudo"; content:"/usr/bin/sudo"; sid:9200; rev:1; classtype:attempted-exploit;)
+alert tcp any any -> any any (msg:"ET EXPLOIT /etc/passwd write attempt"; content:"/etc/passwd"; content:"w"; distance:0; within:10; sid:9201; rev:1; classtype:attempted-exploit;)
+alert tcp any any -> any any (msg:"ET EXPLOIT /etc/shadow read attempt"; content:"/etc/shadow"; sid:9202; rev:1; classtype:attempted-exploit;)
+alert tcp any any -> any any (msg:"ET EXPLOIT sudo -l enumeration"; content:"sudo -l"; sid:9203; rev:1; classtype:attempted-recon;)
+
+# =============================================================================
+# CLOUD / CONTAINER METADATA ATTACKS
+# =============================================================================
+alert http any any -> any any (msg:"ET EXPLOIT AWS metadata endpoint access"; content:"169.254.169.254"; http_uri; sid:9300; rev:1; classtype:attempted-recon;)
+alert http any any -> any any (msg:"ET EXPLOIT GCP metadata endpoint access"; content:"metadata.google.internal"; nocase; http_header; sid:9301; rev:1; classtype:attempted-recon;)
+alert http any any -> any any (msg:"ET EXPLOIT Kubernetes API server probe"; content:"/api/v1/namespaces"; http_uri; sid:9302; rev:1; classtype:attempted-recon;)
+alert http any any -> any any (msg:"ET EXPLOIT Docker API unauthenticated access"; content:"/v1./containers"; http_uri; sid:9303; rev:1; classtype:attempted-admin;)
